@@ -21,9 +21,9 @@ output_file="./result.txt"
 echo "Starting server"
 # run server
 if [[ $BINARY == "false" ]]; then
-    python server.py --n-clients $N_CLIENTS --aggregator $AGGREGATOR &> $log_file&
+    python server.py --n-clients $N_CLIENTS --aggregator $AGGREGATOR&
 elif [[ $BINARY == "true" ]]; then
-    python server.py --n-clients $N_CLIENTS --binary $BINARY --aggregator $AGGREGATOR &> $log_file&
+    python server.py --n-clients $N_CLIENTS --binary $BINARY --aggregator $AGGREGATOR&
 fi
 
 sleep 10  # Sleep for 10s to give the server enough time to start and download the dataset

@@ -11,7 +11,6 @@ import data_handler
 NUM_ROUNDS = 10
 EPOCHS = 1
 BASE_DATASET_PATH = "processed_data_3"
-LEARNING_RATE = 0.0001
 
 
 def get_confusion_matrix(model, x_test: list, y_test: list):
@@ -25,7 +24,7 @@ def get_confusion_matrix(model, x_test: list, y_test: list):
         dtype=tf.dtypes.int32,
         name=None
     )
-    print(f"{c_matrix=}")
+    return c_matrix
 
 def multiClassModel(n_features=78, n_classes=2, time_steps=1):
     model = tf.keras.Sequential()
@@ -33,8 +32,7 @@ def multiClassModel(n_features=78, n_classes=2, time_steps=1):
     model.add(tf.keras.layers.LSTM(units=30))
     model.add(tf.keras.layers.Dropout(0.2))
     model.add(tf.keras.layers.Dense(n_classes, activation="softmax", name="softmax"))
-    optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
-    model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="Adam", metrics=['accuracy'])
     model.summary()
     return model
 
@@ -45,6 +43,7 @@ def main(n_clients: int, aggregator: str, binary: bool) -> None:
     
     n_classes = 2 if binary else 5 
     model = multiClassModel(n_classes=n_classes)
+    function = None
 
     if aggregator == "FedAvg":
         function = fl.server.strategy.FedAvg
@@ -57,16 +56,27 @@ def main(n_clients: int, aggregator: str, binary: bool) -> None:
     elif aggregator == "FedTrimmedAvg":
         function = fl.server.strategy.FedTrimmedAvg
         
-    # Create strategy
-    strategy = function(
-        min_fit_clients=n_clients,
-        min_evaluate_clients=n_clients,
-        min_available_clients=n_clients,
-        evaluate_fn=get_evaluate_fn(model),
-        on_fit_config_fn=fit_config,
-        on_evaluate_config_fn=evaluate_config,
-        initial_parameters=fl.common.ndarrays_to_parameters(model.get_weights()),
-    )
+    if aggregator != "FedProx":
+        strategy = function(
+            min_fit_clients=n_clients,
+            min_evaluate_clients=n_clients,
+            min_available_clients=n_clients,
+            evaluate_fn=get_evaluate_fn(model),
+            on_fit_config_fn=fit_config,
+            on_evaluate_config_fn=evaluate_config,
+            initial_parameters=fl.common.ndarrays_to_parameters(model.get_weights()),
+        )
+    else:
+        strategy = fl.server.strategy.FedProx(
+            min_fit_clients=n_clients,
+            min_evaluate_clients=n_clients,
+            min_available_clients=n_clients,
+            evaluate_fn=get_evaluate_fn(model),
+            on_fit_config_fn=fit_config,
+            on_evaluate_config_fn=evaluate_config,
+            initial_parameters=fl.common.ndarrays_to_parameters(model.get_weights()),
+            proximal_mu=1
+        )
 
     # Start Flower server (SSL-enabled) for four rounds of federated learning
     fl.server.start_server(
@@ -125,7 +135,7 @@ if __name__ == "__main__":
         "--aggregator",
         type=str,
         default="FedAvg",
-        choices=["FedAvg", "FedAdagrad", "FedYogi", "FedAvgM", "FedTrimmedAvg"],
+        choices=["FedAvg", "FedAdagrad", "FedYogi", "FedAvgM", "FedTrimmedAvg", "FedProx"],
     )
     parser.add_argument(
         "--n-clients",
@@ -138,6 +148,5 @@ if __name__ == "__main__":
         default=False
     )
     args = parser.parse_args()
-    print(args.binary)
 
     main(n_clients=args.n_clients, aggregator=args.aggregator, binary=args.binary)

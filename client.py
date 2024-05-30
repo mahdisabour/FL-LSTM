@@ -11,7 +11,6 @@ import data_handler
 # Make TensorFlow logs less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 BASE_DATASET_PATH = "processed_data_3"
-LEARNING_RATE = 0.0001
 
 
 def multiClassModel(n_features=78, n_classes=2, time_steps=1):
@@ -20,8 +19,7 @@ def multiClassModel(n_features=78, n_classes=2, time_steps=1):
     model.add(tf.keras.layers.LSTM(units=30))
     model.add(tf.keras.layers.Dropout(0.2))
     model.add(tf.keras.layers.Dense(n_classes, activation="softmax", name="softmax"))
-    optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
-    model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="Adam", metrics=['accuracy'])
     model.summary()
     return model
 
