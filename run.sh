@@ -19,17 +19,23 @@ log_file="./logs/file_${AGGREGATOR}_${N_CLIENTS}_${BINARY}.log"
 output_file="./result.txt"
 
 echo "Starting server"
-
 # run server
-python server.py --n-clients $N_CLIENTS --binary $BINARY --aggregator "FedAvg"&
-# python server.py --n-clients $N_CLIENTS --binary $BINARY --aggregator "FedAvg" &> $log_file&
+if [[ $BINARY == "false" ]]; then
+    python server.py --n-clients $N_CLIENTS --aggregator $AGGREGATOR &> $log_file&
+elif [[ $BINARY == "true" ]]; then
+    python server.py --n-clients $N_CLIENTS --binary $BINARY --aggregator $AGGREGATOR &> $log_file&
+fi
 
 sleep 10  # Sleep for 10s to give the server enough time to start and download the dataset
 
 for i in $(seq 0 $((N_CLIENTS-1))); do
     echo "Starting client $i "
-    python client.py --client-id=${i} --n-clients $N_CLIENTS --binary false &> /dev/null&
+    if [[ $BINARY == "false" ]]; then
+        python client.py --client-id=${i} --n-clients $N_CLIENTS &> /dev/null&
+    elif [[ $BINARY == "true" ]]; then
+        python client.py --client-id=${i} --binary $BINARY --n-clients $N_CLIENTS &> /dev/null&
     echo "========================"
+    fi
 done
 
 # This will allow you to use CTRL+C to stop all background processes

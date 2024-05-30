@@ -8,10 +8,24 @@ import numpy as np
 
 import data_handler
 
-NUM_ROUNDS = 20
+NUM_ROUNDS = 10
 EPOCHS = 1
 BASE_DATASET_PATH = "processed_data_3"
+LEARNING_RATE = 0.0001
 
+
+def get_confusion_matrix(model, x_test: list, y_test: list):
+    y_predictions = model.predict(x_test)
+    y_predictions = np.argmax(y_predictions, axis=1)
+    c_matrix = tf.math.confusion_matrix(
+        y_test,
+        y_predictions,
+        num_classes=None,
+        weights=None,
+        dtype=tf.dtypes.int32,
+        name=None
+    )
+    print(f"{c_matrix=}")
 
 def multiClassModel(n_features=78, n_classes=2, time_steps=1):
     model = tf.keras.Sequential()
@@ -19,7 +33,8 @@ def multiClassModel(n_features=78, n_classes=2, time_steps=1):
     model.add(tf.keras.layers.LSTM(units=30))
     model.add(tf.keras.layers.Dropout(0.2))
     model.add(tf.keras.layers.Dense(n_classes, activation="softmax", name="softmax"))
-    model.compile(loss="sparse_categorical_crossentropy", optimizer='Adam', metrics=['accuracy'])
+    optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+    model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
     model.summary()
     return model
 
@@ -65,8 +80,9 @@ def get_evaluate_fn(model):
 
     # Load data here to avoid the overhead of doing it in `evaluate` itself
     df = data_handler.load_dataset(
-        paths=[f"{BASE_DATASET_PATH}/test.csv"]
+        paths=[f"{BASE_DATASET_PATH}/test.csv"], sample_size=0.1
     )
+    x_test, y_test = data_handler.get_x_y(df=df, binary=args.binary)
 
     # The `evaluate` function will be called after every round
     def evaluate(
@@ -74,22 +90,8 @@ def get_evaluate_fn(model):
         parameters: fl.common.NDArrays,
         config: Dict[str, fl.common.Scalar],
     ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
-        x_test, y_test = data_handler.get_x_y(df=df, binary=args.binary)
         model.set_weights(parameters)  # Update model with the latest parameters
         result = model.evaluate(x_test, y_test, return_dict=True)
-        y_predictions = model.predict(x_test)
-        y_predictions = np.argmax(y_predictions, axis=1)
-        print(y_test)
-        print(y_predictions)
-        c_matrix = tf.math.confusion_matrix(
-            y_test,
-            y_predictions,
-            num_classes=None,
-            weights=None,
-            dtype=tf.dtypes.int32,
-            name=None
-        )
-        print(f"{c_matrix=}")
         return result["loss"], {"accuracy": result["accuracy"]}
 
     return evaluate
@@ -136,7 +138,6 @@ if __name__ == "__main__":
         default=False
     )
     args = parser.parse_args()
-
-    print(f"{args.binary=}")
+    print(args.binary)
 
     main(n_clients=args.n_clients, aggregator=args.aggregator, binary=args.binary)
