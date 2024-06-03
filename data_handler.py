@@ -86,7 +86,8 @@ def split_and_save_data_frame(
 
 def get_x_y(
     df: pd.DataFrame,
-    binary: bool = True
+    binary: bool = True,
+    reshape: bool = True
 ):
     if binary:
         df['classify_label'] = df.apply(
@@ -108,9 +109,10 @@ def get_x_y(
     x_test = X.values
     y_test = Y.values
 
-    # Reshape x_test to have a time_steps dimension
-    time_steps = 1
-    x_test = x_test.reshape((x_test.shape[0], time_steps, x_test.shape[1]))
+    if reshape:
+        # Reshape x_test to have a time_steps dimension
+        time_steps = 1
+        x_test = x_test.reshape((x_test.shape[0], time_steps, x_test.shape[1]))
     return x_test, y_test
 
 
