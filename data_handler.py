@@ -117,17 +117,15 @@ def get_x_y(
 
 
 if __name__ == "__main__":
-    paths = get_paths(1, 0, "processed_data_3")
+    dataset_path = "data"
+    paths = get_paths(1, 0, )
     df = load_dataset(paths=paths)
-    
-    print(len(df))
-
-    # print(sorted(df[" Label"].unique()))
-    # df = df.sample(frac=1).reset_index(drop=True)
-    # train, test = train_test_split(df, random_state=42, test_size=0.1)
-    # test.to_csv("processed_data_3/test.csv", index=False)
-    # split_and_save_data_frame(
-    #     df=train,
-    #     output_path="processed_data_3/",
-    #     file_counts=8
-    # )
+    print(sorted(df[" Label"].unique()))
+    df = df.sample(frac=1).reset_index(drop=True)
+    train, test = train_test_split(df, random_state=42, test_size=0.1)
+    test.to_csv("processed_data_3/test.csv", index=False)
+    split_and_save_data_frame(
+        df=train,
+        output_path="processed_data_3/",
+        file_counts=8
+    )
