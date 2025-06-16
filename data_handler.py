@@ -118,7 +118,7 @@ def get_x_y(
 
 if __name__ == "__main__":
     dataset_path = "data"
-    paths = get_paths(1, 0, )
+    paths = get_paths(1, 0, dataset_path)
     df = load_dataset(paths=paths)
     print(sorted(df[" Label"].unique()))
     df = df.sample(frac=1).reset_index(drop=True)
